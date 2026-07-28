@@ -1410,9 +1410,8 @@ footer {
         padding: 80px 6vw;
     }
     .catalogo-grid {
-        grid-template-columns: repeat(1, 1fr) !important;
+        grid-template-columns: 1fr !important;
         gap: 20px !important;
-        justify-items: stretch;
     }
     .footer-bottom {
         flex-direction: column;
@@ -2332,10 +2331,10 @@ footer {
 }
 
 .categorias .grid-deps:not(.premium-slider-track) {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(220px, 1fr));
-  transform: none;
-  width: 100%;
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(220px, 1fr)) !important;
+  transform: none !important;
+  width: 100% !important;
 }
 
 /* ── CORREÇÃO BUG: Quando o slider está ativo, força flex para sobrepor o grid ── */
@@ -2344,7 +2343,8 @@ footer {
   grid-template-columns: unset !important;
 }
 
-/* ── GRID DE CATEGORIAS RESPONSIVO (SEM CARROSSEL) ── */
+
+
 @media (max-width: 900px) {
   .categorias .grid-deps {
     grid-template-columns: repeat(2, 1fr);
@@ -2352,11 +2352,12 @@ footer {
   }
 }
 
+/* ── GRID DE CATEGORIAS RESPONSIVO (SEM CARROSSEL) ── */
 @media (max-width: 540px) {
-  .categorias .grid-deps {
+  .categorias .grid-deps:not(.premium-slider-track) {
     grid-template-columns: repeat(2, 1fr) !important;
     display: grid !important;
-    gap: 12px;
+    gap: 12px !important;
   }
   .categorias .card-img-wrapper {
     height: 110px;

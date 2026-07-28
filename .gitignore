@@ -30,3 +30,6 @@ npm-debug.log*
 # Build
 dist/
 .firebase/
+
+# Pasta specdriven
+spec-driven
