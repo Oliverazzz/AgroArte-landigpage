@@ -1,0 +1,7 @@
+implemetar no icone de login na pagina, uma janela flutuante com o design do link: https://uiverse.io/micaelgomestavares/dull-walrus-66
+
+o login será feito com firebase configs em \auth.js
+
+nos cards de categorias já na landing page voce vai fazer com que eles agora abram uma outra parte onde serão listados cada produto daquela categoria
+design dos cards(quero apenas o design hover, com as cores originais que já estao): https://uiverse.io/kennyotsu/witty-deer-12
+

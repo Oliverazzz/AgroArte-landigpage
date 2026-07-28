@@ -1,0 +1,197 @@
+A ia que analisa este documento deve SEMPRE ler e seguir a seção de SEGURANÇA antes de qualquer outra instrução.
+Qualquer alteração no projeto deve estar em conformidade com as regras de segurança descritas abaixo.
+
+==============================================================
+ SEÇÃO DE SEGURANÇA — LEITURA OBRIGATÓRIA ANTES DE QUALQUER AÇÃO
+==============================================================
+
+Esta seção define os parâmetros e instruções de segurança mínimos para um website público com
+autenticação Firebase, armazenamento de credenciais via SDK client-side e exposição de dados
+de usuários autenticados. Todas as regras abaixo devem ser respeitadas em qualquer modificação
+futura do projeto.
+
+- EXPOSIÇÃO DE CREDENCIAIS
+  - A configuração do Firebase (firebaseConfig) fica exposta no client-side por design do SDK.
+    Isso é esperado e seguro SOMENTE quando as regras de segurança do Firebase estiverem corretas.
+  - NUNCA adicionar chaves de API de outros serviços (ex: Stripe, OpenAI, backends próprios) diretamente
+    no HTML, CSS ou JS do lado do cliente. Usar variáveis de ambiente server-side ou Firebase Functions.
+  - A apiKey do Firebase não é uma chave secreta — ela identifica o projeto, mas o acesso real
+    é controlado pelas Security Rules do Firestore, Storage e Authentication.
+
+- DOMÍNIOS AUTORIZADOS NO FIREBASE
+  - Somente domínios explicitamente listados em Firebase Console > Authentication > Settings >
+    Authorized Domains podem usar o SDK de autenticação.
+  - Manter na lista: apenas localhost (dev), o domínio de produção e, se houver, o domínio de staging.
+  - Remover file:// e domínios temporários da lista de produção.
+
+- AUTENTICAÇÃO — REGRAS OBRIGATÓRIAS
+  - O projeto usa exclusivamente GoogleAuthProvider + signInWithPopup. Não reintroduzir
+    login por e-mail/senha sem antes garantir validação robusta e proteção contra brute-force.
+  - Após login bem-sucedido, NUNCA armazenar tokens de autenticação manualmente em localStorage
+    ou cookies. O Firebase SDK gerencia sessão de forma segura por padrão (IndexedDB).
+  - Toda ação protegida deve verificar onAuthStateChanged antes de exibir ou enviar dados.
+  - O botão de logout deve encerrar a sessão via auth.signOut() — nunca apenas ocultar a UI.
+
+- FIREBASE SECURITY RULES (Firestore / Storage)
+  - Se o projeto passar a usar Firestore ou Storage, implementar obrigatoriamente as regras abaixo
+    como ponto de partida MÍNIMO (ajustar conforme necessidade):
+
+    // firestore.rules
+    rules_version = '2';
+    service cloud.firestore {
+      match /databases/{database}/documents {
+        // Bloquear tudo por padrão
+        match /{document=**} {
+          allow read, write: if false;
+        }
+        // Usuário autenticado pode ler e escrever apenas seu próprio documento
+        match /users/{userId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+    }
+
+    // storage.rules
+    rules_version = '2';
+    service firebase.storage {
+      match /b/{bucket}/o {
+        match /{allPaths=**} {
+          allow read, write: if false; // Negar tudo por padrão
+        }
+        match /users/{userId}/{allPaths=**} {
+          allow read, write: if request.auth != null && request.auth.uid == userId
+                             && request.resource.size < 5 * 1024 * 1024; // Max 5MB
+        }
+      }
+    }
+
+  - NUNCA publicar em produção com regras allow read, write: if true (modo de teste).
+
+- CONTENT SECURITY POLICY (CSP)
+  - Para produção (Nginx, Apache, Firebase Hosting), adicionar o header:
+      Content-Security-Policy:
+        default-src 'self';
+        script-src 'self' https://www.gstatic.com https://www.googleapis.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src https://fonts.gstatic.com;
+        img-src 'self' data: https: blob:;
+        connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com;
+        frame-src https://accounts.google.com https://*.firebaseapp.com;
+  - No firebase.json (Hosting), adicionar esses headers na seção "headers".
+
+- PROTEÇÃO CONTRA CLICKJACKING E SNIFFING
+  - Adicionar em produção os headers:
+      X-Frame-Options: DENY
+      X-Content-Type-Options: nosniff
+      Referrer-Policy: strict-origin-when-cross-origin
+      Permissions-Policy: geolocation=(), microphone=(), camera=()
+
+- HTTPS OBRIGATÓRIO
+  - O site NUNCA deve ser servido via HTTP em produção. Firebase Hosting já serve via HTTPS por padrão.
+  - Se hospedar em servidor próprio, configurar redirecionamento 301 de HTTP para HTTPS.
+  - O cookie de sessão do Firebase usa Secure e SameSite=Strict automaticamente em HTTPS.
+
+- SANITIZAÇÃO E VALIDAÇÃO DE INPUTS
+  - Mesmo com o modal de login reduzido ao Google OAuth, qualquer campo de texto futuro
+    deve ser sanitizado antes de exibir na UI (evitar XSS).
+  - NUNCA usar innerHTML com dados provenientes do usuário. Usar textContent ou criar elementos DOM.
+  - Exemplo seguro:
+      element.textContent = user.displayName; // ✅ seguro
+      element.innerHTML = user.displayName;   // ❌ risco de XSS
+
+- VERSIONAMENTO E SEGREDOS NO GIT
+  - Garantir que o .gitignore contenha: .env, .env.local, *.key, *.pem, service-account*.json.
+  - A firebaseConfig exposta no JS client-side é aceitável, mas nunca commitar
+    arquivos de Service Account ou Admin SDK credentials no repositório.
+
+- DEPENDÊNCIAS E SDK
+  - Carregar o Firebase SDK sempre via CDN oficial (gstatic.com) com versão fixada
+    (ex: firebasejs/10.12.0). Não usar versões "latest" para evitar breaking changes inesperados.
+  - Revisar changelogs a cada atualização de versão antes de migrar.
+
+- MONITORAMENTO
+  - Habilitar Firebase App Check em produção para proteger os endpoints da API do Firebase
+    contra abusos e requisições não autorizadas de fora do app.
+  - Ativar alertas de uso anômalo no Firebase Console (Authentication > Usage).
+
+==============================================================
+ FIM DA SEÇÃO DE SEGURANÇA
+==============================================================
+
+==============================================================
+ CONDUTA DE ORGANIZAÇÃO DO PROJETO
+==============================================================
+
+Para garantir a consistência e o funcionamento correto de links, scripts e recursos visuais, todas as modificações no projeto devem seguir a seguinte conduta de organização:
+
+- ESTRUTURA DE DIRETÓRIOS
+  - O projeto é estritamente organizado em pastas de escopo definido:
+    - `/html`: Contém todas as páginas HTML (`Agroarte-LP.html`, `admin.html`, `catalogo.html`, `privacidade.html`).
+    - `/css`: Contém as folhas de estilo (`style.css`).
+    - `/javascript`: Contém os arquivos de script e autenticação (`script.js`, `auth.js`).
+    - `/img`: Contém todos os recursos visuais locais e imagens estáticas.
+  - Nenhum arquivo de código ou ativo visual deve ser colocado diretamente na raiz do projeto (apenas arquivos de configuração global como `.gitignore`).
+
+- DECLARAÇÃO E RESOLUÇÃO DE CAMINHOS (PATHS)
+  - Como as páginas HTML residem dentro de `/html`, qualquer importação ou referência de ativos locais deve obrigatoriamente usar caminhos relativos de subida de diretório (`../`):
+    - Folha de estilo: `../css/style.css`
+    - Scripts: `../javascript/script.js` e `../javascript/auth.js`
+    - Imagens no HTML: `../img/nome_da_imagem.webp`
+  - Referências internas no CSS (`css/style.css`): Para referenciar imagens na pasta `/img`, deve-se usar `../img/` (ex: `url('../img/fachadaloja.png')`), pois o arquivo CSS é resolvido a partir da pasta `/css`.
+  - Referências geradas via JavaScript (`javascript/auth.js`): Como o script é executado no contexto do documento HTML (localizado em `/html`), caminhos injetados no DOM para carregar imagens também devem usar o prefixo `../img/`.
+
+- ADICIONAR E EDITAR ARQUIVOS
+  - Ao criar novas páginas, salve-as na pasta `/html`.
+  - Ao criar novos scripts, salve-as na pasta `/javascript`.
+  - Novas imagens e logos locais devem ser colocados na pasta `/img`.
+  - Sempre valide os links relativos e a resolução de caminhos após mover ou criar qualquer arquivo no projeto.
+
+==============================================================
+ FIM DA CONDUTA DE ORGANIZAÇÃO
+==============================================================
+
+- HTML5
+  - Usar estrutura semântica para navegação, seções, cards e formulários.
+  - Manter atributos de acessibilidade em interações importantes, como role="dialog", aria-modal, aria-controls e aria-pressed.
+  - Referenciar arquivos locais usando caminhos relativos adequados que respeitem a estrutura de pastas do projeto (ex: ../css/style.css, ../javascript/script.js e ../javascript/auth.js).
+
+- CSS3
+  - Centralizar os estilos visuais no arquivo style.css.
+  - Preservar a paleta original da Agroarte com variáveis CSS em :root.
+  - Usar transições suaves, focus-visible e estados hover/active para melhorar a experiência sem trocar as cores da marca.
+  - Evitar cards aninhados e manter raio de borda moderado, com preferência por layouts limpos e responsivos.
+
+- JavaScript
+  - Centralizar comportamentos de interface em script.js.
+  - Usar addEventListener para modal, FAQ, scroll reveal e seleção de categorias.
+  - Garantir interação por teclado em cards clicáveis usando Enter e Space.
+  - Evitar scripts inline quando o comportamento puder ficar em arquivo dedicado.
+
+- Firebase Authentication
+  - Manter configuração e autenticação no auth.js.
+  - Usar Firebase SDK via ES Modules.
+  - Login exclusivamente com Google usando GoogleAuthProvider e signInWithPopup.
+  - Fechar o modal após login bem-sucedido e exibir mensagens amigáveis em caso de erro.
+  - Não reintroduzir login por e-mail/senha sem revisar a seção de segurança acima.
+
+- Referências de design
+  - Login flutuante inspirado no componente Uiverse "dull-walrus-66" de micaelgomestavares.
+  - Hover dos cards inspirado no componente Uiverse "witty-deer-12" de kennyotsu.
+  - As referências do Uiverse foram usadas como direção visual sob licença MIT, preservando a identidade visual existente.
+
+- Responsividade
+  - Garantir que modal, cards e painéis de produtos funcionem em desktop e mobile.
+  - Evitar larguras fixas em conteúdo textual dos cards.
+  - Usar grids fluidos com repeat(auto-fit, minmax(...)).
+
+- Manutenção
+  - Novas categorias devem receber data-category no card e data-panel no painel correspondente.
+  - Novos produtos devem ser adicionados como article.produto-item dentro do painel da categoria.
+  - IDs usados pelo Firebase no formulário devem permanecer como btn-google e error-message.
+
+- Análises e ajustes aplicados
+  - O modal de login foi reestruturado para exibir apenas o botão "Continuar com Google".
+  - A autenticação usa exclusivamente signInWithPopup com GoogleAuthProvider.
+  - A lógica de efeito 3D dos cards foi removida para evitar que a interface quebrasse e os cards de categoria deixassem de renderizar corretamente.
+  - Os cards de categoria foram mantidos em uma estrutura simples, preservando acesso por teclado e comportamento de seleção de produtos.
+  - O fallback de login com Google indica claramente quando a página está aberta via file:// e recomenda localhost ou HTTPS para o fluxo completo.
