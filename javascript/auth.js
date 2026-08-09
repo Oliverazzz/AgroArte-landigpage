@@ -250,7 +250,7 @@ async function carregarDestaquesLP() {
       card.className = 'catalogo-card';
 
       const msgWpp = encodeURIComponent(`Olá! Vi o site e gostaria de solicitar um orçamento para o item em Destaque: ${p.nome} (${categoriasNomes[p.categoria] || p.categoria}).`);
-      const linkWpp = `https://wa.me/551496369132?text=${msgWpp}`;
+      const linkWpp = `https://wa.me/5514996336181?text=${msgWpp}`;
 
       let imgBlockHTML = '';
       let listImgs = p.imagens || (p.imagem ? [p.imagem] : ["https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=500&q=80"]);
