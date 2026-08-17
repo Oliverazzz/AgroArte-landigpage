@@ -89,7 +89,7 @@ async function carregarProdutos() {
       nome: "[TESTE] Bota Texana (Com ML)",
       desc: "Produto de teste injetado temporariamente para validar o botão amarelo do Mercado Livre.",
       categoria: "selaria",
-      imagem: "https://images.unsplash.com/photo-1769374090266-ae4e916abc75?q=80&w=388",
+      imagem: "https://images.unsplash.com/photo-1599427670731-979de87714ed?q=80&w=800&auto=format&fit=crop",
       mlLink: "https://produto.mercadolivre.com.br/MLB-12345678-bota",
       icone: "👢",
       destaque: false
