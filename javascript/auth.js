@@ -242,7 +242,22 @@ async function carregarDestaquesLP() {
     const querySnapshot = await getDocs(q);
 
     let count = 0;
-    querySnapshot.forEach((docSnap) => {
+    const docsArray = [];
+    // --- MOCK TESTE MERCADO LIVRE ---
+    docsArray.push({
+      data: () => ({
+        nome: "[TESTE] Bota Texana (Com ML)",
+        desc: "Produto de teste injetado para validar o botão do Mercado Livre na Home.",
+        categoria: "selaria",
+        imagem: "https://images.unsplash.com/photo-1769374090266-ae4e916abc75?q=80&w=388",
+        mlLink: "https://produto.mercadolivre.com.br/MLB-12345678-bota",
+        icone: "👢",
+        destaque: true
+      })
+    });
+    querySnapshot.forEach(d => docsArray.push(d));
+
+    docsArray.forEach((docSnap) => {
       count++;
       const p = docSnap.data();
 

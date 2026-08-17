@@ -2771,3 +2771,40 @@ section {
 .policy-update { text-align: center; font-size: 0.82rem; color: var(--text-muted); margin-top: 60px; padding-top: 24px; border-top: 1px solid rgba(0,0,0,0.08); }
 .policy-back { display: inline-flex; align-items: center; gap: 8px; color: var(--primary); font-weight: 600; font-size: 0.9rem; text-decoration: none; margin-bottom: 40px; transition: gap 0.2s ease; }
 .policy-back:hover { gap: 12px; }
+
+/* --- UI/UX FIXES RESTORED --- */
+@media (max-width: 768px) {
+  /* Fix slider arrows overlapping images */
+  .slider-arrow {
+    top: 58% !important;
+  }
+  
+  /* Make all buttons full width on mobile for easier tapping */
+  .btn-action, .btn-primary, .btn-catalogo-ml {
+    width: 100% !important;
+    text-align: center;
+    box-sizing: border-box;
+  }
+  
+  /* Fix admin panel list items wrapping weirdly on small screens */
+  #admin-lista-produtos li, #admin-lista-categorias li {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px;
+  }
+  #admin-lista-produtos li div, #admin-lista-categorias li div {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  /* Center Categories grid and remove slider gradients */
+  #categorias-slider-wrapper::before,
+  #categorias-slider-wrapper::after {
+    display: none !important;
+  }
+  #categorias-slider-wrapper .premium-slider-container {
+    padding: 0 !important;
+    margin: 0 auto !important;
+  }
+}

@@ -82,6 +82,18 @@ async function carregarProdutos() {
     querySnapshot.forEach((doc) => {
       PRODUTOS.push({ id: doc.id, ...doc.data() });
     });
+    
+    // --- MOCK TESTE MERCADO LIVRE ---
+    PRODUTOS.unshift({
+      id: "teste_ml_catalogo",
+      nome: "[TESTE] Bota Texana (Com ML)",
+      desc: "Produto de teste injetado temporariamente para validar o botão amarelo do Mercado Livre.",
+      categoria: "selaria",
+      imagem: "https://images.unsplash.com/photo-1769374090266-ae4e916abc75?q=80&w=388",
+      mlLink: "https://produto.mercadolivre.com.br/MLB-12345678-bota",
+      icone: "👢",
+      destaque: false
+    });
 
     loadingElement.style.display = 'none';
     gridElement.style.display = 'grid';
