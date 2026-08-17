@@ -55,7 +55,7 @@ document.addEventListener('click', (event) => {
     if (event.target.closest('a')) return;
     const cat = card.dataset.category;
     if (cat) {
-      window.location.href = `./catalogo.html?cat=${cat}`;
+      window.location.href = `./html/catalogo.html?cat=${cat}`;
     }
   }
 });
@@ -67,7 +67,7 @@ document.addEventListener('keydown', (event) => {
     event.preventDefault();
     const cat = card.dataset.category;
     if (cat) {
-      window.location.href = `./catalogo.html?cat=${cat}`;
+      window.location.href = `./html/catalogo.html?cat=${cat}`;
     }
   }
 });
