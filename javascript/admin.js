@@ -42,6 +42,25 @@ const dragZone = document.getElementById('image-drag-zone');
 const fileInput = document.getElementById('prod-imagem-file');
 const dragZoneText = document.getElementById('drag-zone-text');
 const dragIconContainer = document.getElementById('drag-icon-container');
+const searchInput = document.getElementById('admin-search-prod');
+
+if (searchInput) {
+  searchInput.addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase();
+    const items = listContainer.querySelectorAll('.admin-prod-item');
+    let visibleCount = 0;
+    items.forEach(item => {
+      const nome = item.querySelector('.admin-prod-info h4').textContent.toLowerCase();
+      if (nome.includes(term)) {
+        item.style.setProperty('display', 'flex', 'important');
+        visibleCount++;
+      } else {
+        item.style.setProperty('display', 'none', 'important');
+      }
+    });
+    countSpan.textContent = visibleCount;
+  });
+}
 
 // Elementos do Moderador de Avaliações
 const avalContainer = document.getElementById('admin-aval-container');

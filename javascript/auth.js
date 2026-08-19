@@ -125,6 +125,11 @@ document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
         if (loginModal  && !loginModal.hidden)  closeLoginModal();
         if (accountModal && !accountModal.hidden) closeAccountModal();
+        const modalTodasAval = document.getElementById('modal-todas-avaliacoes');
+        if (modalTodasAval && modalTodasAval.style.display === 'flex') {
+            modalTodasAval.style.display = 'none';
+            document.body.classList.remove('modal-open');
+        }
     }
 });
 
@@ -243,18 +248,6 @@ async function carregarDestaquesLP() {
 
     let count = 0;
     const docsArray = [];
-    // --- MOCK TESTE MERCADO LIVRE ---
-    docsArray.push({
-      data: () => ({
-        nome: "[TESTE] Bota Texana (Com ML)",
-        desc: "Produto de teste injetado para validar o botão do Mercado Livre na Home.",
-        categoria: "selaria",
-        imagem: "https://images.unsplash.com/photo-1599427670731-979de87714ed?q=80&w=800&auto=format&fit=crop",
-        mlLink: "https://produto.mercadolivre.com.br/MLB-12345678-bota",
-        icone: "👢",
-        destaque: true
-      })
-    });
     querySnapshot.forEach(d => docsArray.push(d));
 
     docsArray.forEach((docSnap) => {
@@ -509,24 +502,70 @@ if (formAval) {
   });
 }
 
-// Carregar e ouvir Avaliações em tempo real via snapshot
+let currentStoryIndex = 0;
+let storyInterval = null;
+const STORY_DURATION = 6000;
+
 function ouvirAvaliacoesLP() {
   if (!containerAvalDinamicas) return;
 
   onSnapshot(query(collection(db, "avaliacoes"), orderBy("criadoEm", "desc")), (snapshot) => {
     containerAvalDinamicas.innerHTML = '';
-    let count = 0;
-    const limit = 3; // Limita a visualização inicial a 3 depoimentos na LP
 
     let totalReviews = [];
     snapshot.forEach(docSnap => {
       totalReviews.push(docSnap.data());
     });
 
-    // Renderiza apenas os 3 primeiros
-    const visibleReviews = totalReviews.slice(0, limit);
-    visibleReviews.forEach(val => {
-      count++;
+    if (totalReviews.length === 0) {
+      containerAvalDinamicas.style.display = 'none';
+      return;
+    }
+
+    // Embaralha para que seja aleatório
+    totalReviews = totalReviews.sort(() => 0.5 - Math.random());
+
+    containerAvalDinamicas.style.display = 'block';
+
+    const storyWrapper = document.createElement('div');
+    storyWrapper.className = 'story-wrapper';
+    
+    const progressBar = document.createElement('div');
+    progressBar.className = 'story-progress-bar';
+    const progressFill = document.createElement('div');
+    progressFill.className = 'story-progress-fill';
+    progressBar.appendChild(progressFill);
+    
+    const storyContent = document.createElement('div');
+    storyContent.className = 'story-content';
+    
+    storyWrapper.appendChild(progressBar);
+    storyWrapper.appendChild(storyContent);
+    containerAvalDinamicas.appendChild(storyWrapper);
+
+    let btnVerMais = document.getElementById('container-btn-ver-mais');
+    if (!btnVerMais) {
+      const divBtn = document.createElement('div');
+      divBtn.style.textAlign = 'center';
+      divBtn.style.marginTop = '20px';
+      divBtn.id = 'container-btn-ver-mais';
+      divBtn.innerHTML = `
+        <button id="btn-ver-mais-avaliacoes" style="background: none; border: 1.5px solid var(--accent); color: var(--primary); font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.85rem; padding: 10px 20px; border-radius: 30px; cursor: pointer; transition: all 0.25s ease;" onmouseover="this.style.backgroundColor='var(--accent)'; this.style.color='var(--white)'" onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--primary)'">
+          Todas as Avaliações (${totalReviews.length})
+        </button>
+      `;
+      containerAvalDinamicas.after(divBtn);
+      
+      document.getElementById('btn-ver-mais-avaliacoes').addEventListener('click', () => {
+        abrirModalTodasAvaliacoes(totalReviews);
+      });
+    } else {
+      document.getElementById('btn-ver-mais-avaliacoes').textContent = `Todas as Avaliações (${totalReviews.length})`;
+    }
+
+    const showStory = (index) => {
+      const val = totalReviews[index];
+      
       let estrelasHTML = '';
       if (val.nota) {
         for (let i = 1; i <= 5; i++) {
@@ -534,62 +573,79 @@ function ouvirAvaliacoesLP() {
         }
       }
 
-      const card = document.createElement('div');
-      card.className = 'card-depoimento';
-      card.innerHTML = `
-        <p class="depoimento-text" style="font-style: italic; color: #555;">
-          ${val.texto ? `"${escapeHTML(val.texto)}"` : "Avaliou sem deixar comentário."}
-        </p>
-        <div class="depoimento-autor" style="margin-top: 12px; display: flex; align-items: center; justify-content: space-between;">
-          <div style="display: flex; align-items: center;">
-            <div class="autor-avatar" style="background-color: var(--accent); color: var(--primary); font-weight: 700;">
-              ${escapeHTML((val.nome || "C")[0].toUpperCase())}
-            </div>
-            <div class="autor-info" style="margin-left: 8px;">
-              <h3 style="font-size: 0.9rem; margin-bottom: 4px;">${escapeHTML(val.nome || "Cliente")}</h3>
-              <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 700; color: #1b7c4a; background: #e8f7ef; border: 1px solid #b6e8cc; border-radius: 20px; padding: 2px 8px; font-family: 'Montserrat', sans-serif; letter-spacing: 0.2px;">
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 3L5 9L2 6" stroke="#1b7c4a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                Avaliação do Site
-              </span>
-            </div>
+      storyContent.innerHTML = `
+        <div class="card-depoimento story-card" style="margin: 0; box-shadow: none; position: relative;">
+
+          <!-- Ícone de fonte no canto superior direito -->
+          <div style="position: absolute; top: 14px; right: 14px; opacity: 0.85;">
+            ${val.fonte === 'google' ? `
+              <svg width="22" height="22" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+                <path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
+                <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
+                <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
+              </svg>
+            ` : `
+              <!-- Agroarte logo icon -->
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="12" fill="#1b4d3e"/>
+                <path d="M12 5 C12 5 7 9 7 14 C7 18 12 20 12 20 C12 20 17 18 17 14 C17 9 12 5 12 5 Z" fill="#d4a373"/>
+                <path d="M12 5 L12 20" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+            `}
           </div>
-          <div style="display: flex;">
-            ${estrelasHTML}
+
+          <p class="depoimento-text" style="font-style: italic; color: #555; padding-right: 30px;">
+            ${val.texto ? '"' + escapeHTML(val.texto) + '"' : "Avaliou sem deixar comentário."}
+          </p>
+          <div class="depoimento-autor" style="margin-top: 12px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center;">
+              <div class="autor-avatar" style="background-color: var(--accent); color: var(--primary); font-weight: 700;">
+                ${escapeHTML((val.nome || "C")[0].toUpperCase())}
+              </div>
+              <div class="autor-info" style="margin-left: 8px;">
+                <h3 style="font-size: 0.9rem; margin-bottom: 4px;">${escapeHTML(val.nome || "Cliente")}</h3>
+                <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 700; color: #1b7c4a; background: #e8f7ef; border: 1px solid #b6e8cc; border-radius: 20px; padding: 2px 8px; font-family: 'Montserrat', sans-serif; letter-spacing: 0.2px;">
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 3L5 9L2 6" stroke="#1b7c4a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  ${val.fonte === 'google' ? 'Google' : 'Avaliação do Site'}
+                </span>
+              </div>
+            </div>
+            <div style="display: flex;">
+              ${estrelasHTML}
+            </div>
           </div>
         </div>
       `;
-      containerAvalDinamicas.appendChild(card);
-    });
+      
+      progressFill.style.transition = 'none';
+      progressFill.style.width = '0%';
+      storyContent.classList.remove('story-active');
+      
+      // Força reflow
+      void progressFill.offsetWidth;
+      
+      progressFill.style.transition = `width ${STORY_DURATION}ms linear`;
+      progressFill.style.width = '100%';
+      storyContent.classList.add('story-active');
+    };
 
-    if (totalReviews.length > 0) {
-      containerAvalDinamicas.style.display = 'grid';
-    }
+    if (storyInterval) clearInterval(storyInterval);
 
-    // Gerencia o botão discreto de "Mais Avaliações"
-    const btnVerMais = document.getElementById('btn-ver-mais-avaliacoes');
-    if (totalReviews.length > limit) {
-      if (!btnVerMais) {
-        const divBtn = document.createElement('div');
-        divBtn.style.textAlign = 'center';
-        divBtn.style.marginTop = '20px';
-        divBtn.id = 'container-btn-ver-mais';
-        divBtn.innerHTML = `
-          <button id="btn-ver-mais-avaliacoes" style="background: none; border: 1.5px solid var(--accent); color: var(--primary); font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.85rem; padding: 10px 20px; border-radius: 30px; cursor: pointer; transition: all 0.25s ease;" onmouseover="this.style.backgroundColor='var(--accent)'; this.style.color='var(--white)'" onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--primary)'">
-            Mais Avaliações (${totalReviews.length})
-          </button>
-        `;
-        containerAvalDinamicas.after(divBtn);
+    currentStoryIndex = 0;
+    showStory(currentStoryIndex);
+
+    if (totalReviews.length > 1) {
+      storyInterval = setInterval(() => {
+        storyContent.classList.remove('story-active');
         
-        // Modal / Visualização de todas as avaliações
-        document.getElementById('btn-ver-mais-avaliacoes').addEventListener('click', () => {
-          abrirModalTodasAvaliacoes(totalReviews);
-        });
-      } else {
-        btnVerMais.textContent = `Mais Avaliações (${totalReviews.length})`;
-      }
+        setTimeout(() => {
+          currentStoryIndex = (currentStoryIndex + 1) % totalReviews.length;
+          showStory(currentStoryIndex);
+        }, 400); 
+      }, STORY_DURATION);
     } else {
-      const containerBtn = document.getElementById('container-btn-ver-mais');
-      if (containerBtn) containerBtn.remove();
+      progressBar.style.display = 'none';
     }
   });
 }
@@ -645,12 +701,12 @@ function abrirModalTodasAvaliacoes(reviews) {
   });
 
   modal.innerHTML = `
-    <div class="modal-backdrop" onclick="document.getElementById('modal-todas-avaliacoes').style.display='none'"></div>
+    <div class="modal-backdrop" onclick="document.getElementById('modal-todas-avaliacoes').style.display='none'; document.body.classList.remove('modal-open');"></div>
     <div class="auth-shell" style="width: min(100%, 550px); z-index: 111;">
       <div class="form auth-form" style="padding: 24px; max-height: 80vh; overflow-y: auto;">
         <div class="flex-row" style="margin-bottom: 16px; justify-content: space-between; width: 100%;">
           <span style="font-weight: 700; color: var(--primary); font-family: 'Montserrat', sans-serif; font-size: 1.1rem;">Todas as Avaliações</span>
-          <span onclick="document.getElementById('modal-todas-avaliacoes').style.display='none'" style="cursor: pointer; font-size: 1.5rem; font-weight: bold; color: var(--text-muted); line-height: 1;">&times;</span>
+          <span onclick="document.getElementById('modal-todas-avaliacoes').style.display='none'; document.body.classList.remove('modal-open');" style="cursor: pointer; font-size: 1.5rem; font-weight: bold; color: var(--text-muted); line-height: 1;">&times;</span>
         </div>
         <div style="display: flex; flex-direction: column; gap: 16px; width: 100%; max-height: 55vh; overflow-y: auto; padding-right: 4px;">
           ${listHTML}
@@ -709,18 +765,23 @@ async function carregarCategoriasLP() {
     };
 
     let cardsHTML = '';
+    let catArray = [];
+    querySnapshot.forEach(d => catArray.push(d));
 
-    querySnapshot.forEach(docSnap => {
+    const limit = 4;
+    const displayCats = catArray.slice(0, limit);
+
+    displayCats.forEach(docSnap => {
       const catId = docSnap.id;
       const cat = docSnap.data();
       
       const nome = cat.name || cat.nome || catId;
       const desc = cat.desc || cat.descricao || "Confira os melhores itens em nossa loja.";
-      const icone = cat.icone || iconesPadrao[catId] || "⭐";
+      const icone = cat.icone || iconesPadrao[catId] || "🏷️";
       const imagem = converterLinkGoogleDrive(cat.imagem || cat.img || imgsPadrao[catId] || "https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=500&q=80");
 
       cardsHTML += `
-        <div class="card-dep" data-category="${catId}" tabindex="0" role="button">
+        <div class="card-dep" data-category="${catId}" tabindex="0" role="button" onclick="window.location.href='./html/catalogo.html?cat=${catId}'">
           <div class="card-img-wrapper">
             <img src="${imagem}" alt="${nome}" onerror="this.src='https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=500&q=80'">
             <div class="card-icon-badge">${icone}</div>
@@ -729,10 +790,20 @@ async function carregarCategoriasLP() {
             <h3>${nome}</h3>
             <p>${desc}</p>
           </div>
-          <div class="card-dep-click-indicator">→</div>
+          <div class="card-dep-click-indicator">👆</div>
         </div>
       `;
     });
+
+    if (catArray.length > limit) {
+      cardsHTML += `
+        <div class="card-dep" tabindex="0" role="button" onclick="window.location.href='./html/catalogo.html'" style="display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(27, 77, 62, 0.05); text-align: center; cursor: pointer; border: 2px dashed rgba(27, 77, 62, 0.2);">
+          <div style="font-size: 3rem; margin-bottom: 12px;">📚</div>
+          <h3 style="color: var(--primary);">Todas as Categorias</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; padding: 0 16px;">Clique para ver o catálogo completo e explorar todas as ${catArray.length} categorias.</p>
+        </div>
+      `;
+    }
 
     if (cardsHTML !== '') {
       track.innerHTML = cardsHTML;

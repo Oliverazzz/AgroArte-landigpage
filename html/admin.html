@@ -73,13 +73,18 @@
               </div>
             </div>
             
+            <div class="admin-form-group">
+              <label for="prod-icone">Emoji do Card (Opcional)</label>
+              <input type="text" id="prod-icone" class="admin-input" placeholder="🐾" maxlength="4">
+            </div>
+            
             <!-- Imagem: Links (Vírgula) ou Drag and Drop -->
             <div class="admin-form-group">
               <label for="prod-imagem">Links de Imagens (URLs da Internet ou Compartilhamento do Google Drive - separe por vírgula)</label>
               <input type="text" id="prod-imagem" class="admin-input" placeholder="https://exemplo.com/foto1.jpg, https://drive.google.com/file/d/ID/view?usp=sharing">
             </div>
             
-            <div class="admin-form-group">
+            <div class="admin-form-group" style="display: none;">
               <label>Ou Arraste Imagens para o box abaixo (Múltiplas fotos permitidas)</label>
               <div id="image-drag-zone" class="drag-drop-zone">
                 <div id="drag-icon-container">
@@ -95,10 +100,6 @@
               </div>
             </div>
             
-            <div class="admin-form-group">
-              <label for="prod-icone">Emoji do Card (Opcional)</label>
-              <input type="text" id="prod-icone" class="admin-input" placeholder="🐾" maxlength="4">
-            </div>
 
             <!-- Link Mercado Livre -->
             <div class="admin-form-group">
@@ -118,8 +119,9 @@
 
         <!-- Coluna 2: Lista dos cadastrados -->
         <section class="admin-card admin-card-scrollable">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
             <h3 style="margin: 0;">Produtos no Catálogo (<span id="prod-count">0</span>)</h3>
+            <input type="text" id="admin-search-prod" class="admin-input" placeholder="Pesquisar produto..." style="max-width: 250px; margin: 0; padding: 8px 12px; font-size: 0.9rem;">
           </div>
           <div class="admin-prod-list" id="admin-list-container">
             <!-- Populado via JS -->

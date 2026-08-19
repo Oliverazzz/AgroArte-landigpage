@@ -343,7 +343,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.initHighlightsSlider = () => {
     if (!highlightsSlider) {
-      highlightsSlider = setupGeneralSlider('destaques-slider-wrapper', 1, 4);
+      highlightsSlider = setupGeneralSlider('destaques-slider-wrapper', 2, 4);
     } else {
       highlightsSlider.refresh();
     }
